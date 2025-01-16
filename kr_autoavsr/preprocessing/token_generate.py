@@ -92,6 +92,11 @@ def process_data(
             csv_f.write(f"dataset,video_file,vframes,token_ids\n")
             csv_f.write(f"{mouth_dir},{file_base}.mp4,{frame_count},{token_id_str}\n")
 
+        # # TXT 저장
+        # txt_file_path = os.path.join(txt_output_dir, f"{file_base}.txt")
+        # with open(txt_file_path, "w", encoding="utf-8") as txt_f:
+        #     txt_f.write(label_text)
+
         print(f"Processed {file_base}: CSV saved.")
 
 

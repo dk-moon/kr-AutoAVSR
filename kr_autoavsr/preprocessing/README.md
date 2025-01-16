@@ -27,3 +27,4 @@
         - video_fn은 옵션으로 입력하지 않을 경우, video_dir의 모든 video에 대하여 작업 수행
     3. json 파일 정보 탐색
     4. json에 저장되어진 Sentence 정보 기준으로 대본 지문, 영상 및 음성 구간별 파일 추출
+    5. sentencepiece를 이용하여 텍스트 토큰화 수행
