@@ -72,16 +72,16 @@ if __name__ == "__main__":
     # 명령줄 인자 설정
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--test_dir",
+        "--video_dir",
         default="/home/aiv-gpu-019/data-all",
         help="비디오 파일이 포함된 폴더 경로",
     )
     parser.add_argument(
-        "--test_fn",
+        "--video_fn",
         default="",
         help="처리할 특정 비디오 파일 이름 (비워두면 모든 파일 처리)",
     )
     args = parser.parse_args()
 
     # 지정된 폴더와 파일 이름을 기반으로 작업 수행
-    process_files(args.test_dir, args.test_fn)
+    process_files(args.video_dir, args.video_fn)

@@ -1,6 +1,7 @@
 import os
 import argparse
 import numpy
+
 numpy.float = numpy.float64
 numpy.int = numpy.int_
 import numpy as np
@@ -22,9 +23,7 @@ def detect_landmark(image, detector, predictor):
         coords (numpy array): 68개 랜드마크 좌표
     """
     try:
-        gray = cv2.cvtColor(
-            image, cv2.COLOR_RGB2GRAY
-        )  # skvideo는 기본 RGB 형식으로 로드
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         rects = detector(gray, 1)
         if len(rects) == 0:
             return None
@@ -61,10 +60,14 @@ def video_generator(filename, size, fps, img_array):
 
 
 def preprocess_video(
-    input_video_path, output_video_path, face_predictor_path, mean_face_path
+    input_video_path,
+    output_video_path,
+    face_predictor_path,
+    mean_face_path,
+    batch_size=100,
 ):
     """
-    skvideo.io를 사용해 비디오 파일을 읽고 OpenCV로 프레임을 처리하여 ROI를 추출합니다.
+    skvideo.io를 사용해 비디오 파일을 읽고 프레임 단위로 배치 처리하여 ROI를 추출합니다.
     """
     # 랜드마크 탐지기 및 예측기 초기화
     detector = dlib.get_frontal_face_detector()
@@ -79,13 +82,15 @@ def preprocess_video(
     STD_SIZE = (256, 256)
     stablePntsIDs = [33, 36, 39, 42, 45]
 
-    try:
-        # skvideo.io를 사용해 비디오 읽기
-        videogen = skvideo.io.vread(input_video_path)
-        frames = np.array([frame for frame in videogen])  # 모든 프레임을 배열로 저장
-        rois = []
+    frames = []
+    landmarks = []
+    rois = []
 
-        for frame_idx, frame in enumerate(tqdm(frames, desc="Processing frames")):
+    try:
+        # skvideo.io.vreader를 사용해 비디오 프레임 읽기
+        videogen = skvideo.io.vreader(input_video_path)
+
+        for frame_idx, frame in enumerate(tqdm(videogen, desc="Processing frames")):
             if frame is None or frame.size == 0:
                 print(
                     f"Warning: Empty or invalid frame at index {frame_idx}. Skipping."
@@ -94,31 +99,30 @@ def preprocess_video(
 
             # RGB 형식에서 랜드마크 탐지
             landmark = detect_landmark(frame, detector, predictor)
-            if landmark is None:
-                print(
-                    f"Warning: No landmarks detected for frame {frame_idx}. Skipping."
-                )
-                continue
+            frames.append(frame)
+            if landmark is not None:
+                landmarks.append(landmark)
+            else:
+                landmarks.append(None)  # 랜드마크가 감지되지 않은 프레임
 
-            try:
-                # ROI(Region of Interest) 추출
-                roi = crop_patch(
-                    frame,
-                    landmark,
+            # 배치 크기만큼 프레임이 쌓이면 처리
+            if len(frames) == batch_size:
+                process_batch(
+                    frames,
+                    landmarks,
                     mean_face_landmarks,
-                    stablePntsIDs,
+                    rois,
                     STD_SIZE,
-                    window_margin=12,
-                    start_idx=48,
-                    stop_idx=68,
-                    crop_height=96,
-                    crop_width=96,
+                    stablePntsIDs,
                 )
-                if roi is not None:
-                    rois.append(roi)
-            except Exception as e:
-                print(f"Error processing frame {frame_idx}: {e}")
-                continue
+                frames.clear()
+                landmarks.clear()
+
+        # 남은 프레임 처리
+        if frames:
+            process_batch(
+                frames, landmarks, mean_face_landmarks, rois, STD_SIZE, stablePntsIDs
+            )
 
     except Exception as e:
         print(f"Error reading video with skvideo.io: {e}")
@@ -126,13 +130,43 @@ def preprocess_video(
 
     # ROI가 없으면 처리 중단
     if not rois:
-        print("No valid frames with detected landmarks. Skipping video.")
+        print("No valid ROIs extracted. Skipping video.")
         return
 
     # 비디오 생성 및 저장
     size = (rois[0].shape[1], rois[0].shape[2])
     video_generator(output_video_path, size, 25, np.array(rois, dtype=np.uint8))
     print(f"Processed video saved at: {output_video_path}")
+
+
+def process_batch(
+    frames, landmarks, mean_face_landmarks, rois, STD_SIZE, stablePntsIDs
+):
+    """
+    배치 단위로 프레임과 랜드마크를 처리해 ROI를 추출합니다.
+    """
+    try:
+        # 랜드마크 보간
+        interpolated_landmarks = landmarks_interpolate(landmarks)
+        if interpolated_landmarks is None:
+            print("No valid landmarks after interpolation for batch. Skipping batch.")
+            return
+
+        # ROI 추출
+        batch_rois = crop_patch(
+            frames,
+            interpolated_landmarks,
+            mean_face_landmarks,
+            stablePntsIDs,
+            STD_SIZE,
+            start_idx=48,
+            stop_idx=68,
+            crop_height=96,
+            crop_width=96,
+        )
+        rois.extend(batch_rois)
+    except Exception as e:
+        print(f"Error during batch processing: {e}")
 
 
 def process_files(folder_path, file_name, face_predictor_path, mean_face_path):
