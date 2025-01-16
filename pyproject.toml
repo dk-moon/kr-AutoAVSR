@@ -80,7 +80,9 @@ dependencies = [
     "opencv-python (==4.10.0.84)",
     "pywavelets (==1.4.1)",
     "tifffile (==2023.7.10)",
-    "pydub (>=0.25.1,<0.26.0)"
+    "pydub (>=0.25.1,<0.26.0)",
+    "fairseq (>=0.12.2,<0.13.0)",
+    "omegaconf (==2.0.6)"
 ]
 
 
