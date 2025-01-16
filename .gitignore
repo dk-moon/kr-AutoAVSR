@@ -2,3 +2,5 @@ tests/*
 
 *.npy
 *.dat
+
+kr_autoavsr/preprocessing/__pycache__/*
