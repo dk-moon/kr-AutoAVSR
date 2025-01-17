@@ -106,7 +106,7 @@ class ModelModule(LightningModule):
         predicted = self.text_transform.post_process(predicted_token_id).replace("<eos>", "")
 
         token_id = sample["target"]
-        actual = self.text_transform.post_process(token_id)
+        actual = self.text_transform.post_process(token_id).replace("<eos>", "").replace("<unk>", "")
 
         self.total_edit_distance += compute_word_level_distance(actual, predicted)
         self.total_length += len(actual.split())

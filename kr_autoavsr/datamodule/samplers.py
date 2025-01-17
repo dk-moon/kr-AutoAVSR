@@ -6,7 +6,9 @@ from torch.utils.data import Dataset, DistributedSampler, RandomSampler
 from torch.utils.data.sampler import Sampler
 
 
-def batch_by_size(indices: List[int], size_fn: Callable[[int], int], max_tokens: int) -> List[List[int]]:
+def batch_by_size(
+    indices: List[int], size_fn: Callable[[int], int], max_tokens: int
+) -> List[List[int]]:
     """Batch indices by size.
     Args:
         indices: List of indices to batch.
