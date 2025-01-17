@@ -16,7 +16,7 @@ from .transforms import AudioTransform, VideoTransform
 def pad(samples, pad_val=0.0):
     lengths = [len(s) for s in samples]
     max_size = max(lengths)
-  
+
     sample_shape = list(samples[0].shape[1:])
     collated_batch = samples[0].new_zeros([len(samples), max_size] + sample_shape)
     for i, sample in enumerate(samples):
@@ -77,8 +77,8 @@ class DataModule(LightningDataModule):
             modality=self.cfg.data.modality,
             audio_transform=AudioTransform("train"),
             video_transform=VideoTransform("train"),
-            mouth_dir = self.mouth_dir, 
-            wav_dir = self.wav_dir,
+            mouth_dir=self.mouth_dir,
+            wav_dir=self.wav_dir,
         )
         sampler = ByFrameCountSampler(train_ds, self.cfg.data.max_frames)
         if self.total_gpus > 1:
@@ -91,13 +91,15 @@ class DataModule(LightningDataModule):
         ds_args = self.cfg.data.dataset
         val_ds = AVDataset(
             root_dir=ds_args.root_dir,
-            label_path=os.path.join(ds_args.root_dir, ds_args.label_dir, ds_args.val_file),
+            label_path=os.path.join(
+                ds_args.root_dir, ds_args.label_dir, ds_args.val_file
+            ),
             subset="val",
             modality=self.cfg.data.modality,
             audio_transform=AudioTransform("val"),
             video_transform=VideoTransform("val"),
-            mouth_dir = self.mouth_dir, 
-            wav_dir = self.wav_dir,
+            mouth_dir=self.mouth_dir,
+            wav_dir=self.wav_dir,
         )
         sampler = ByFrameCountSampler(
             val_ds, self.cfg.data.max_frames_val, shuffle=False
@@ -110,15 +112,17 @@ class DataModule(LightningDataModule):
         ds_args = self.cfg.data.dataset
         dataset = AVDataset(
             root_dir=ds_args.root_dir,
-            label_path=os.path.join(ds_args.root_dir, ds_args.label_dir, ds_args.test_file),
+            label_path=os.path.join(
+                ds_args.root_dir, ds_args.label_dir, ds_args.test_file
+            ),
             subset="test",
             modality=self.cfg.data.modality,
             audio_transform=AudioTransform(
                 "test", snr_target=self.cfg.decode.snr_target
             ),
             video_transform=VideoTransform("test"),
-            mouth_dir = self.mouth_dir, 
-            wav_dir = self.wav_dir,
+            mouth_dir=self.mouth_dir,
+            wav_dir=self.wav_dir,
         )
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=None)
         return dataloader

@@ -5,20 +5,22 @@ defaults:
   - optimizer: adamw
   - trainer: train
   - decode: default
-
-hydra:
-  output_subdir: null
-  run:
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
+hydra:  
+  output_subdir: null  
+  run:  
     dir: .
-exp_dir: null
-mouth_dir: null
-wav_dir: null
+exp_dir:
+mouth_dir:
+wav_dir:
 label_flag: 1
-exp_name: null
-gpus: null
-slurm_job_id: null
-file_path: null
-ckpt_path: null
-pretrained_model_path: null
-transfer_frontend: null
-transfer_encoder: null
+exp_name:
+gpus: 
+slurm_job_id:
+file_path:
+ckpt_path:
+pretrained_model_path:
+transfer_frontend:
+transfer_encoder:
+

@@ -1,12 +1,38 @@
 from operator import itemgetter
-from typing import Iterator, Optional
-
+from typing import Iterator, Optional, List, Callable
 import numpy as np
 import torch
-
-from fairseq.data import data_utils
 from torch.utils.data import Dataset, DistributedSampler, RandomSampler
 from torch.utils.data.sampler import Sampler
+
+
+def batch_by_size(indices: List[int], size_fn: Callable[[int], int], max_tokens: int) -> List[List[int]]:
+    """Batch indices by size.
+    Args:
+        indices: List of indices to batch.
+        size_fn: Function to determine the size of an index.
+        max_tokens: Maximum tokens per batch.
+    Returns:
+        List of batches, where each batch is a list of indices.
+    """
+    batches = []
+    current_batch = []
+    current_size = 0
+
+    for idx in indices:
+        size = size_fn(idx)
+        if current_size + size > max_tokens and current_batch:
+            batches.append(current_batch)
+            current_batch = []
+            current_size = 0
+
+        current_batch.append(idx)
+        current_size += size
+
+    if current_batch:
+        batches.append(current_batch)
+
+    return batches
 
 
 class ByFrameCountSampler(Sampler):
@@ -19,7 +45,7 @@ class ByFrameCountSampler(Sampler):
         self.seed = seed
         self.epoch = 0
 
-        batch_indices = data_utils.batch_by_size(
+        batch_indices = batch_by_size(
             self._get_indices(), lambda i: self.sizes[i], max_tokens=max_frames_per_gpu
         )
         self.num_batches = len(batch_indices)
@@ -38,7 +64,7 @@ class ByFrameCountSampler(Sampler):
         return self.num_batches
 
     def __iter__(self):
-        batch_indices = data_utils.batch_by_size(
+        batch_indices = batch_by_size(
             self._get_indices(),
             lambda i: self.sizes[i],
             max_tokens=self.max_frames_per_gpu,

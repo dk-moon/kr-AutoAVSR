@@ -9,7 +9,7 @@ from lightning import ModelModule
 from datamodule.data_module import DataModule
 
 
-@hydra.main(config_path="configs", config_name="config2")  # version_base="1.3",
+@hydra.main(version_base="1.3", config_path="configs", config_name="config2")
 def main(cfg):
     # Set modules and trainer
     if cfg.data.modality in ["audio", "video"]:
@@ -18,7 +18,7 @@ def main(cfg):
         from lightning_av import ModelModule
     modelmodule = ModelModule(cfg)
     datamodule = DataModule(cfg)
-    trainer = Trainer(num_nodes=1, gpus=1)
+    trainer = Trainer(num_nodes=1, gpus=0)
     # Training and testing
     modelmodule.model.load_state_dict(
         torch.load(cfg.pretrained_model_path, map_location=lambda storage, loc: storage)
