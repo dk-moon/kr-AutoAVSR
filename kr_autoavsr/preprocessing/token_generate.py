@@ -49,7 +49,8 @@ def process_data(
         spm_dict_path: str, SentencePiece 유닛 파일 경로
     """
     os.makedirs(csv_output_dir, exist_ok=True)
-    os.makedirs(txt_output_dir, exist_ok=True)
+    csv_output_path = os.path.join(csv_output_dir, "data.csv")
+    # os.makedirs(txt_output_dir, exist_ok=True)
 
     # SentencePiece 모델 초기화
     text_transform = TextTransform(
@@ -59,45 +60,42 @@ def process_data(
     # Label 파일 기준으로 동일한 파일명 검색
     label_files = [f for f in os.listdir(label_dir) if f.endswith(".txt")]
 
-    for label_file in tqdm(label_files, desc="Processing data"):
-        file_base = os.path.splitext(label_file)[0]
+    # CSV 파일 열기
+    with open(csv_output_path, "w", encoding="utf-8") as csv_f:
+        # 헤더 작성
+        csv_f.write("dataset,video_file,vframes,token_ids\n")
 
-        # 각 파일 경로 확인
-        mouth_file = os.path.join(mouth_dir, f"{file_base}.mp4")
-        label_file_path = os.path.join(label_dir, label_file)
-        audio_file = os.path.join(audio_dir, f"{file_base}.wav")
+        for label_file in tqdm(label_files, desc="Processing data"):
+            file_base = os.path.splitext(label_file)[0]
 
-        if not os.path.exists(mouth_file):
-            print(f"Missing mouth file for {file_base}, skipping.")
-            continue
-        if not os.path.exists(audio_file):
-            print(f"Missing audio file for {file_base}, skipping.")
-            continue
+            # 각 파일 경로 확인
+            mouth_file = os.path.join(mouth_dir, f"{file_base}.mp4")
+            label_file_path = os.path.join(label_dir, label_file)
+            audio_file = os.path.join(audio_dir, f"{file_base}.wav")
 
-        # 라벨 읽기
-        with open(label_file_path, "r", encoding="utf-8") as label_f:
-            label_text = label_f.readline().strip()
+            if not os.path.exists(mouth_file):
+                print(f"Missing mouth file for {file_base}, skipping.")
+                continue
+            if not os.path.exists(audio_file):
+                print(f"Missing audio file for {file_base}, skipping.")
+                continue
 
-        # 비디오 프레임 수 추출
-        video = cv2.VideoCapture(mouth_file)
-        frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+            # 라벨 읽기
+            with open(label_file_path, "r", encoding="utf-8") as label_f:
+                label_text = label_f.readline().strip()
 
-        # SentencePiece 토큰화
-        token_ids = text_transform.tokenize(label_text)
-        token_id_str = " ".join(map(str, [_.item() for _ in token_ids]))
+            # 비디오 프레임 수 추출
+            video = cv2.VideoCapture(mouth_file)
+            frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        # CSV 저장
-        csv_file_path = os.path.join(csv_output_dir, f"{file_base}.csv")
-        with open(csv_file_path, "w", encoding="utf-8") as csv_f:
-            csv_f.write(f"dataset,video_file,vframes,token_ids\n")
+            # SentencePiece 토큰화
+            token_ids = text_transform.tokenize(label_text)
+            token_id_str = " ".join(map(str, [_.item() for _ in token_ids]))
+
+            # CSV에 데이터 추가
             csv_f.write(f"{mouth_dir},{file_base}.mp4,{frame_count},{token_id_str}\n")
 
-        # # TXT 저장
-        # txt_file_path = os.path.join(txt_output_dir, f"{file_base}.txt")
-        # with open(txt_file_path, "w", encoding="utf-8") as txt_f:
-        #     txt_f.write(label_text)
-
-        print(f"Processed {file_base}: CSV saved.")
+        print(f"Processed all files: CSV saved at {csv_output_path}")
 
 
 if __name__ == "__main__":
