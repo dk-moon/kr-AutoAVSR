@@ -4,3 +4,4 @@ tests/*
 *.dat
 
 kr_autoavsr/preprocessing/__pycache__/*
+*.ckpt
